@@ -10,15 +10,17 @@ import numpy
 import random
 from faker import Faker
 import json
-from boto import kinesis
+import boto3
 import uuid
 import threading
 import time
 import sys
+import multiprocessing
+
+client = boto3.client('kinesis')
 
 # Kinesis Stream info
 stream_name = 'web_traffic'
-kinesis_stream = kinesis.connect_to_region('us-east-1')
 
 # Initialize Faker object
 fake = Faker()
@@ -29,6 +31,14 @@ event_sample = []
 for i in range(10000):
     event_sample.append(numpy.random.choice(event_list, p=[0.8, 0.08, 0.04, 0.08]))
 
+class Event(object):
+	def __init__(self, user_agent, ip, user_id, timestamp, product_id, event_type):
+		self.user_agent = user_agent
+		self.ip = ip
+		self.user_id = user_id
+		self.timestamp = timestamp
+		self.product_id = product_id
+		self.event_type = event_type
 
 # Create a list of unique user_ids
 def create_unique_ids(user_count):
@@ -91,27 +101,38 @@ def run_stream(seconds, max_records):
         dt = datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S')
 
         # Create event log
-        user_event = {
-            'user_agent': normal_distrib(user_agent_list),
-            'ip': fake.ipv4(),
-            'user_id': normal_distrib(user_id_list),
-            'timestamp': dt,
-            'product_id' : normal_distrib(list(range(1, 1000))),
-            'event_type': random_choice(event_sample)
-        }
-        data = json.dumps(user_event)
+        #user_event = {
+        #    'user_agent': normal_distrib(user_agent_list),
+        #    'ip': fake.ipv4(),
+        #    'user_id': normal_distrib(user_id_list),
+        #    'timestamp': dt,
+        #    'product_id' : normal_distrib(list(range(1, 1000))),
+        #    'event_type': random_choice(event_sample)
+        #}
+        #data = json.dumps(user_event)
 
+        user_event = Event(
+                        normal_distrib(user_agent_list),
+                        fake.ipv4(),
+                        normal_distrib(user_id_list),
+                        dt,
+                        normal_distrib(list(range(1,1000))),
+                        random_choice(event_sample)
+                        )
+        data = json.dumps(user_event.__dict__)
+        
         # Package user events into a Kinesis package of up to 500 records, to increase HTTP throughput
         record = {
             'Data': data,
-            'PartitionKey': "123"
+            'PartitionKey': str(uuid.uuid4())
         }
         records.append(record)
         total_records += 1
-
+        #print record        
         if total_records % max_records == 0:
             print "{0} records. Pushing to Kinesis".format(total_records)
-            kinesis_stream.put_records(records, stream_name)
+            
+            client.put_records(Records=records, StreamName=stream_name)
             records = []
 
 
@@ -122,26 +143,27 @@ if __name__ == "__main__":
 	user_id_list = [x.strip('\n') for x in uid]
 
 	# Read in a preset user agent file
-	with open('user_id_list.txt', 'rb') as agents:
+	with open('ua_list.txt', 'rb') as agents:
 	    user_agents = agents.readlines()
 	user_agent_list = [x.strip('\n') for x in user_agents]
 	
 	try:
-		threads = int(sys.argv[1])
+		jobs = []
+		processes = int(sys.argv[1])
 		seconds = int(sys.argv[2])
 		max_records = int(sys.argv[3])
-
-		for x in range(2):
-			t = threading.Thread(target=run_stream, args=[seconds,max_records])
-			t.start()
+		
+		for x in range(processes):
+			p = multiprocessing.Process(target=run_stream, args=[seconds,max_records])
+			jobs.append(p)
+			p.start()
 	except:
 		print """
-        Invalid Input. Arguments are:
-        data_generator <threads> <seconds-to-stream> <max_records>
-        
-        Example:
-        python data_generator.py 2 300
-        """
+        	Invalid Input. Arguments are: 
+		data_generator <processes> <seconds-to-stream> <max_records>
+		Example:
+		python data_generator.py 2 300 500
+		"""
 
 
 
