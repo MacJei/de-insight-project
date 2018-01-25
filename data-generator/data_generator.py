@@ -129,6 +129,7 @@ if __name__ == "__main__":
 	try:
 		threads = int(sys.argv[1])
 		seconds = int(sys.argv[2])
+		max_records = int(sys.argv[3])
 
 		for x in range(2):
 			t = threading.Thread(target=run_stream, args=[seconds,max_records])
@@ -136,7 +137,7 @@ if __name__ == "__main__":
 	except:
 		print """
         Invalid Input. Arguments are:
-        data_generator <threads> <seconds-to-stream>
+        data_generator <threads> <seconds-to-stream> <max_records>
         
         Example:
         python data_generator.py 2 300
