@@ -134,7 +134,7 @@ if __name__ == "__main__":
 			t = threading.Thread(target=run_stream, args=[seconds,max_records])
 			t.start()
 	except:
-        print """
+		print """
         Invalid Input. Arguments are:
         data_generator <threads> <seconds-to-stream>
         
