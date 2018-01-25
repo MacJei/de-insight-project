@@ -23,16 +23,6 @@ kinesis_stream = kinesis.connect_to_region('us-east-1')
 # Initialize Faker object
 fake = Faker()
 
-# Read in a preset user files
-with open('user_id_list.txt', 'rb') as users:
-    uid = users.readlines()
-user_id_list = [x.strip('\n') for x in uid]
-
-# Read in a preset user agent file
-with open('user_id_list.txt', 'rb') as agents:
-    user_agents = agents.readlines()
-user_agent_list = [x.strip('\n') for x in user_agents]
-
 # Create a sample list of events
 event_list = ['pageView', 'click', 'purchase', 'addToCart']
 event_sample = []
@@ -126,6 +116,16 @@ def run_stream(seconds, max_records):
 
 
 if __name__ == "__main__":
+	# Read in a preset user files
+	with open('user_id_list.txt', 'rb') as users:
+	    uid = users.readlines()
+	user_id_list = [x.strip('\n') for x in uid]
+
+	# Read in a preset user agent file
+	with open('user_id_list.txt', 'rb') as agents:
+	    user_agents = agents.readlines()
+	user_agent_list = [x.strip('\n') for x in user_agents]
+	
     try:
         threads = int(sys.argv[1])
         seconds = int(sys.argv[2])
