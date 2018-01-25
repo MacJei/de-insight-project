@@ -126,14 +126,14 @@ if __name__ == "__main__":
 	    user_agents = agents.readlines()
 	user_agent_list = [x.strip('\n') for x in user_agents]
 	
-    try:
-        threads = int(sys.argv[1])
-        seconds = int(sys.argv[2])
+	try:
+		threads = int(sys.argv[1])
+		seconds = int(sys.argv[2])
 
-        for x in range(2):
-            t = threading.Thread(target=run_stream, args=[seconds,max_records])
-            t.start()
-    except:
+		for x in range(2):
+			t = threading.Thread(target=run_stream, args=[seconds,max_records])
+			t.start()
+	except:
         print """
         Invalid Input. Arguments are:
         data_generator <threads> <seconds-to-stream>
