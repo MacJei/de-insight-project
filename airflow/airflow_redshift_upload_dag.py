@@ -11,19 +11,19 @@ current_time = pytz.utc.localize(datetime.utcnow()).astimezone(est_tz)
 upload_date = current_time.strftime('%Y-%m-%d')
 upload_hour = current_time.strftime('%H')
 upload_interval = int(current_time.strftime('%M'))/5
-script_dir = os.getcwd() + '/scripts/'
+script_dir = '/home/ubuntu/de-insight-project/airflow/scripts/'
 # DAG Object
 
 default_args = {
 		'owner': 'insight-kenny',
 		'depends_on_past': False,
-		'start_date': datetime.now(),
+		'start_date': datetime(2018,1,26),
 		#'start_date': current_time,
 		'retries': 3,
 		'retry_delay': timedelta(minutes=1)
 }
 
-dag = DAG('redshift_upload', default_args=default_args, schedule_interval=timedelta(5))
+dag = DAG('redshift_upload', default_args=default_args, schedule_interval='*/5 * * * *')
 
 upload_data = BashOperator(
 	task_id='upload-to-redshift',
