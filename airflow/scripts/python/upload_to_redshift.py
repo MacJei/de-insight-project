@@ -55,8 +55,9 @@ if __name__ == "__main__":
         Not enough arguements. Please input <upload_date> <upload_hour> <upload_interval>
         <upload_interval is a value from 1-12 representing a 5 minute block of time in an hour."""
     except pg.InternalError as e2:
-        print "File not loaded yet."
-        print e2
+	print "File not loaded yet."
+        #print e2
+	Raise
 
     conn.commit()
     cur.close()
