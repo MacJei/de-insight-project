@@ -47,6 +47,14 @@ if __name__ == "__main__":
                     delimiter as '|'
                     timeformat 'auto'
                     """.format(upload_date, upload_hour, upload_interval, rs_iam))
+    
+        cur.execute("""COPY web_event_agg
+                    from 's3://insight-spark-stream-files/event_aggs/upload_date={0}/upload_hour={1}/upload_interval={2}/'
+                    iam_role '{3}'
+                    csv
+                    delimiter as '|'
+                    dateformat 'auto'
+                    """.format(upload_date, upload_hour, upload_interval, rs_iam))        
         print "Upload Complete."
     except IndexError as e:
         print "Job failed."
@@ -55,9 +63,9 @@ if __name__ == "__main__":
         Not enough arguements. Please input <upload_date> <upload_hour> <upload_interval>
         <upload_interval is a value from 1-12 representing a 5 minute block of time in an hour."""
     except pg.InternalError as e2:
-	print "File not loaded yet."
+	   print "File not loaded yet."
         #print e2
-	Raise
+	   raise
 
     conn.commit()
     cur.close()
