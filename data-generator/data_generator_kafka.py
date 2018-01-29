@@ -19,14 +19,9 @@ import six
 from kafka.client import KafkaClient
 from kafka.producer import KafkaProducer
 
-client = boto3.client('kinesis')
-
-# Kinesis Stream info
-stream_name = 'web_traffic'
-
 # Initialize Faker object
 fake = Faker()
-
+start_time = time.time()
 # Create a sample list of events
 event_list = ['pageView', 'click', 'purchase', 'addToCart']
 event_sample = []
@@ -49,7 +44,6 @@ class Producer(object):
         self.producer = KafkaProducer(bootstrap_servers=addr)
 
     def produce_msgs(self, source_symbol):
-        price_field = random.randint(800,1400)
         msg_cnt = 0
 
         while True:
@@ -65,7 +59,7 @@ class Producer(object):
                             )
             data = json.dumps(user_event.__dict__)
 
-            print message_info
+            print "Records sent: {0}, Rate: {1}".format(msg_cnt,msg_cnt/(time.time()-start_time))
             self.producer.send('web_event', data)
             msg_cnt += 1
 
@@ -135,11 +129,11 @@ if __name__ == "__main__":
 
 
 
-    args = sys.argv
-    ip_addr = str(args[1])
-    partition_key = str(args[2])
-    prod = Producer(ip_addr)
-    prod.produce_msgs(partition_key)
+	args = sys.argv
+	ip_addr = str(args[1])
+	partition_key = str(args[2])
+	prod = Producer(ip_addr)
+	prod.produce_msgs(partition_key)
 
 
 
