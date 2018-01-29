@@ -100,17 +100,6 @@ def run_stream(seconds, max_records):
     while time.time() < time_end:
         dt = datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S')
 
-        # Create event log
-        #user_event = {
-        #    'user_agent': normal_distrib(user_agent_list),
-        #    'ip': fake.ipv4(),
-        #    'user_id': normal_distrib(user_id_list),
-        #    'timestamp': dt,
-        #    'product_id' : normal_distrib(list(range(1, 1000))),
-        #    'event_type': random_choice(event_sample)
-        #}
-        #data = json.dumps(user_event)
-
         user_event = Event(
                         normal_distrib(user_agent_list),
                         fake.ipv4(),
@@ -128,7 +117,6 @@ def run_stream(seconds, max_records):
         }
         records.append(record)
         total_records += 1
-        #print record        
         if total_records % max_records == 0:
             print "{0} records. Pushing to Kinesis".format(total_records)
             

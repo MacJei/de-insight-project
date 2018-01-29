@@ -17,9 +17,8 @@ import time
 import sys
 import multiprocessing
 
-client = boto3.client('kinesis')
-
 # Kinesis Stream info
+client = boto3.client('kinesis')
 stream_name = 'web_traffic'
 
 # Initialize Faker object
@@ -79,7 +78,7 @@ def normal_distrib(id_list):
             return id_list[index]
 
 
-# Custom random choice function due to speed (no replacement)
+# Custom "random" choice function due to speed (no replacement)
 def random_choice(items):
     while True:
         index = int(random.randint(0, len(items)))
@@ -132,8 +131,9 @@ def run_stream(seconds, max_batch_size):
             record_size = get_byte_size(data)
             packaged_record = data + '\n'
 
+        # If batch exceeds the batch size, push it to Kinesis.
         if batch_byte_size > max_batch_size:
-            print "{0} records. Pushing to Kinesis. Current rate: {1} records per second".format(total_records, total_records/seconds)
+            print "{0} records. Pushing to Kinesis.".format(total_records)
             client.put_records(Records=batch_records, StreamName=stream_name)
             batch_records = []
             batch_byte_size = 0
@@ -151,6 +151,7 @@ if __name__ == "__main__":
 	user_agent_list = [x.strip('\n') for x in user_agents]
 	
 	try:
+        # Set up processes
 		jobs = []
 		processes = int(sys.argv[1])
 		seconds = int(sys.argv[2])

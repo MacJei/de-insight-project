@@ -36,9 +36,9 @@ def process(time, rdd):
 		# Spark SQL query to partiition the data for S3 and pre sort data.
 		batchDF = spark.sql("""SELECT
 					cast(UNIX_TIMESTAMP(timestamp, 'dd-MM-yyyy H:m:s') as TIMESTAMP) timestamp,
-                	to_date(from_utc_timestamp(cast(UNIX_TIMESTAMP(current_timestamp,'dd-MM-yyyy') as TIMESTAMP),'EST')) upload_date,
-                	date_format(from_utc_timestamp(cast(UNIX_TIMESTAMP(current_timestamp,'dd-MM-yyyy H:m:s') as TIMESTAMP),'EST'), 'H') upload_hour,
-                	cast(date_format(cast(UNIX_TIMESTAMP(current_timestamp,'dd-MM-yyyy H:m:s') as TIMESTAMP), 'm')/5 as integer) upload_interval,
+                	to_date(from_utc_timestamp(cast(UNIX_TIMESTAMP(current_timestamp,'dd-MM-yyyy') as TIMESTAMP),'EST')) upload_date, # Partition field
+                	date_format(from_utc_timestamp(cast(UNIX_TIMESTAMP(current_timestamp,'dd-MM-yyyy H:m:s') as TIMESTAMP),'EST'), 'H') upload_hour, # Partition field
+                	cast(date_format(cast(UNIX_TIMESTAMP(current_timestamp,'dd-MM-yyyy H:m:s') as TIMESTAMP), 'm')/5 as integer) upload_interval, # Partition field
 					ip, 
 					user_id, 
 					user_agent, 
@@ -52,9 +52,9 @@ def process(time, rdd):
                         to_date(cast(UNIX_TIMESTAMP(timestamp,'dd-MM-yyyy') as TIMESTAMP)) event_date,
                         date_format(cast(UNIX_TIMESTAMP(timestamp,'dd-MM-yyyy H:m:s') as TIMESTAMP), 'h') hour,
                         date_format(cast(UNIX_TIMESTAMP(timestamp,'dd-MM-yyyy H:m:s') as TIMESTAMP), 'm') minute,
-               			to_date(from_utc_timestamp(cast(UNIX_TIMESTAMP(current_timestamp,'dd-MM-yyyy') as TIMESTAMP),'EST')) upload_date,
-               			date_format(from_utc_timestamp(cast(UNIX_TIMESTAMP(current_timestamp,'dd-MM-yyyy H:m:s') as TIMESTAMP),'EST'), 'H') upload_hour,
-               			cast(date_format(cast(UNIX_TIMESTAMP(current_timestamp,'dd-MM-yyyy H:m:s') as TIMESTAMP), 'm')/5 as integer) upload_interval,
+               			to_date(from_utc_timestamp(cast(UNIX_TIMESTAMP(current_timestamp,'dd-MM-yyyy') as TIMESTAMP),'EST')) upload_date, # Partition field
+               			date_format(from_utc_timestamp(cast(UNIX_TIMESTAMP(current_timestamp,'dd-MM-yyyy H:m:s') as TIMESTAMP),'EST'), 'H') upload_hour, # Partifion field
+               			cast(date_format(cast(UNIX_TIMESTAMP(current_timestamp,'dd-MM-yyyy H:m:s') as TIMESTAMP), 'm')/5 as integer) upload_interval, # Partition field
                         split(user_agent,"/")[0] browser,
                         case when split(user_agent,'\\\\(')[1] like '%Linux%' then 'Linux'
                         when split(user_agent,'\\\\(')[1] like '%Windows%' then 'Windows'
@@ -93,13 +93,12 @@ if __name__=="__main__":
             ssc, appName, streamName, endpointUrl, regionName, InitialPositionInStream.LATEST, 10)
 
 	#windowed_lines = lines.window(60).flatMap(lambda x: x.split("\n"))
+	# Split the spark context lines by the newline delimiter
 	sc_lines = lines.flatMap(lambda x: x.split("\n"))
-	#json_line = lines.flatMap(lambda x: x.split("\n")).map(lambda row: json.loads(row[1]))
-	
-	
-	#json_line.foreachRDD(printRecord)
-	#windowed_lines.foreachRDD(process)
+
+	# For each dstream RDD, apply the processing
 	sc_lines.foreachRDD(process)
+
 	ssc.start()
 	ssc.awaitTermination()
 
