@@ -16,8 +16,8 @@ import time
 import sys
 import multiprocessing
 import six
-from kafka.client import KafkaClient
-from kafka.producer import KafkaProducer
+from pykafka import KafkaClient
+
 
 # Initialize Faker object
 fake = Faker()
@@ -41,8 +41,9 @@ class Event(object):
 class Producer(object):
 
     def __init__(self, addr):
-        self.producer = KafkaProducer(bootstrap_servers=addr)
-
+	self.client = KafkaClient(addr)
+	self.topic = self.client.topics["web_event"]
+	self.producer = self.topic.get_producer()
     def produce_msgs(self, source_symbol):
         msg_cnt = 0
 
@@ -58,9 +59,9 @@ class Producer(object):
                             random_choice(event_sample)
                             )
             data = json.dumps(user_event.__dict__)
-
-            print "Records sent: {0}, Rate: {1}".format(msg_cnt,msg_cnt/(time.time()-start_time))
-            self.producer.send('web_event', data)
+            if msg_cnt % 100000 == 0:
+                print "Records sent: {0}, Rate: {1}".format(msg_cnt,msg_cnt/(time.time()-start_time))
+            self.producer.produce(data)
             msg_cnt += 1
 
 # Create a list of unique user_ids
