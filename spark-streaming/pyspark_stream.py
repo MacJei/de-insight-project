@@ -9,6 +9,12 @@ from pyspark.sql.types import *
 import json
 from datetime import datetime, timedelta
 
+"""
+Run Spark streaming job using the following command:
+ nohup spark-submit --master spark://ip-10-0-0-13:7077 \
+ --packages org.apache.spark:spark-streaming-kinesis-asl_2.11:2.2.1 \
+ /home/ubuntu/python-consumer/pyspark_stream.py web_parser2 web_traffic https://kinesis.us-east-1.amazonaws.com us-east-1 &
+"""
 
 # Start Spark session in order to be able to use sparksql and dataframes with pyspark dstreams.
 def getSparkSessionInstance(sparkConf):
