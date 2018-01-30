@@ -36,9 +36,9 @@ def process(time, rdd):
 		# Spark SQL query to partiition the data for S3 and pre sort data.
 		batchDF = spark.sql("""SELECT
 					cast(UNIX_TIMESTAMP(timestamp, 'dd-MM-yyyy H:m:s') as TIMESTAMP) timestamp,
-                	to_date(from_utc_timestamp(cast(UNIX_TIMESTAMP(current_timestamp,'dd-MM-yyyy') as TIMESTAMP),'EST')) upload_date, # Partition field
-                	date_format(from_utc_timestamp(cast(UNIX_TIMESTAMP(current_timestamp,'dd-MM-yyyy H:m:s') as TIMESTAMP),'EST'), 'H') upload_hour, # Partition field
-                	cast(date_format(cast(UNIX_TIMESTAMP(current_timestamp,'dd-MM-yyyy H:m:s') as TIMESTAMP), 'm')/5 as integer) upload_interval, # Partition field
+					to_date(from_utc_timestamp(cast(UNIX_TIMESTAMP(current_timestamp,'dd-MM-yyyy') as TIMESTAMP),'EST')) upload_date,
+					date_format(from_utc_timestamp(cast(UNIX_TIMESTAMP(current_timestamp,'dd-MM-yyyy H:m:s') as TIMESTAMP),'EST'), 'H') upload_hour,
+					cast(date_format(cast(UNIX_TIMESTAMP(current_timestamp,'dd-MM-yyyy H:m:s') as TIMESTAMP), 'm')/5 as integer) upload_interval,
 					ip, 
 					user_id, 
 					user_agent, 
@@ -52,9 +52,9 @@ def process(time, rdd):
                         to_date(cast(UNIX_TIMESTAMP(timestamp,'dd-MM-yyyy') as TIMESTAMP)) event_date,
                         date_format(cast(UNIX_TIMESTAMP(timestamp,'dd-MM-yyyy H:m:s') as TIMESTAMP), 'h') hour,
                         date_format(cast(UNIX_TIMESTAMP(timestamp,'dd-MM-yyyy H:m:s') as TIMESTAMP), 'm') minute,
-               			to_date(from_utc_timestamp(cast(UNIX_TIMESTAMP(current_timestamp,'dd-MM-yyyy') as TIMESTAMP),'EST')) upload_date, # Partition field
-               			date_format(from_utc_timestamp(cast(UNIX_TIMESTAMP(current_timestamp,'dd-MM-yyyy H:m:s') as TIMESTAMP),'EST'), 'H') upload_hour, # Partifion field
-               			cast(date_format(cast(UNIX_TIMESTAMP(current_timestamp,'dd-MM-yyyy H:m:s') as TIMESTAMP), 'm')/5 as integer) upload_interval, # Partition field
+                        to_date(from_utc_timestamp(cast(UNIX_TIMESTAMP(current_timestamp,'dd-MM-yyyy') as TIMESTAMP),'EST')) upload_date,
+                        date_format(from_utc_timestamp(cast(UNIX_TIMESTAMP(current_timestamp,'dd-MM-yyyy H:m:s') as TIMESTAMP),'EST'), 'H') upload_hour,
+                        cast(date_format(cast(UNIX_TIMESTAMP(current_timestamp,'dd-MM-yyyy H:m:s') as TIMESTAMP), 'm')/5 as integer) upload_interval,
                         split(user_agent,"/")[0] browser,
                         case when split(user_agent,'\\\\(')[1] like '%Linux%' then 'Linux'
                         when split(user_agent,'\\\\(')[1] like '%Windows%' then 'Windows'
@@ -67,13 +67,13 @@ def process(time, rdd):
                         count(case when event_type = 'addToCart' then 1 end) add_to_cart
                         from raw_logs
                         group by 1,2,3,4,5,6,7,8,9
-                        order by 1,2,3 """)
+                        order by 1,2,3""")
 
 
 		batchDF.coalesce(1).write.partitionBy('upload_date','upload_hour','upload_interval').mode('append').csv("s3n://insight-spark-stream-files/event_logs",sep='|')
 		agg_events.coalesce(1).write.partitionBy('upload_date','upload_hour','upload_interval').mode('append').csv("s3n://insight-spark-stream-files/event_aggs",sep='|')
 		
-		#batchDF.show()
+		batchDF.show()
 
 
 	except:
