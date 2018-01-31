@@ -45,13 +45,13 @@ def process(time, rdd):
 					event_type, 
 					product_id 
 					from raw_logs
-					order by 1 desc""")
+					order by 1""")
 
 		# Spark SQL query to aggregate data, and to transform the data. Also partitions the data
 		agg_events = spark.sql("""SELECT        
-                        to_date(from_utc_timestamp(cast(UNIX_TIMESTAMP(current_timestamp,'dd-MM-yyyy') as TIMESTAMP),'EST')) event_date,
-                        hour(from_utc_timestamp(cast(UNIX_TIMESTAMP(current_timestamp,'dd-MM-yyyy H:m:s') as TIMESTAMP),'EST')) hour,
-                        minute(from_utc_timestamp(cast(UNIX_TIMESTAMP(current_timestamp,'dd-MM-yyyy H:m:s') as TIMESTAMP),'EST')) minute,
+                        to_date(cast(UNIX_TIMESTAMP(current_timestamp,'dd-MM-yyyy') as TIMESTAMP)) event_date,
+                        hour(cast(UNIX_TIMESTAMP(current_timestamp,'dd-MM-yyyy H:m:s') as TIMESTAMP)) hour,
+                        minute(cast(UNIX_TIMESTAMP(current_timestamp,'dd-MM-yyyy H:m:s') as TIMESTAMP)) minute,
                         to_date(from_utc_timestamp(cast(UNIX_TIMESTAMP(current_timestamp,'dd-MM-yyyy') as TIMESTAMP),'EST')) upload_date,
                         date_format(from_utc_timestamp(cast(UNIX_TIMESTAMP(current_timestamp,'dd-MM-yyyy H:m:s') as TIMESTAMP),'EST'), 'H') upload_hour,
                         cast(date_format(cast(UNIX_TIMESTAMP(current_timestamp,'dd-MM-yyyy H:m:s') as TIMESTAMP), 'm')/5 as integer) upload_interval,
@@ -70,12 +70,9 @@ def process(time, rdd):
                         group by 1,2,3,4,5,6,7,8,9
                         order by 1,2,3""")
 
-		batchDF.coalesce(1).write.partitionBy('upload_date','upload_hour','upload_interval').mode('append').csv("s3n://insight-spark-stream-files/event_logs",sep='|')
-		agg_events.coalesce(1).write.partitionBy('upload_date','upload_hour','upload_interval').mode('append').csv("s3n://insight-spark-stream-files/event_aggs",sep='|')
+		batchDF.coalesce(3).write.partitionBy('upload_date','upload_hour','upload_interval').mode('append').csv("s3n://insight-spark-stream-files/event_logs",sep='|')
+		agg_events.coalesce(3).write.partitionBy('upload_date','upload_hour','upload_interval').mode('append').csv("s3n://insight-spark-stream-files/event_aggs",sep='|')
 		
-		agg_events.show()
-
-
 	except:
 		pass
 
