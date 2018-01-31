@@ -11,6 +11,10 @@
 
 Increments is a probject that utilizes a streaming data pipeline to implement incremental processing on data. The goal of this project is to provide near-real time processed data to analysts, instead of having them wait hours for the batch jobs to finish
 
+## Pipeline
+
+![alt text](pipeline.png)
+
 ### Airflow
 
 The airflow folder contains the dags and the actual redshift upload script. The redshift job is scheduled to run every 5 minutes on partitioned data in S3
