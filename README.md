@@ -9,7 +9,7 @@
 
 ## Project Overview
 
-Increments is a probject that utilizes a streaming data pipeline to implement incremental processing on data. The goal of this project is to provide near-real time processed data to analysts, instead of having them wait hours for the batch jobs to finish
+Increments is a project that utilizes a streaming data pipeline to implement incremental processing on data. The goal of this project is to provide near-real time processed data to analysts, instead of having them wait hours for the batch jobs to finish
 
 ## Pipeline
 
@@ -29,4 +29,8 @@ The spark streaming job uses pyspark, and sets up a stream that processes data e
 The two current jobs are:
 * Pre-aggregate data
 * Partition and sort the raw logs for Redshift
+
+### Web App
+
+Initially used Airbnb's Superset, now working on a plotly dash because of performance issues
 
