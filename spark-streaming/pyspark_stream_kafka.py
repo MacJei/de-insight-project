@@ -89,14 +89,15 @@ if __name__=="__main__":
 	ssc = StreamingContext(sc,60)
         zkQuorum, topic = sys.argv[1:]
         kvs = KafkaUtils.createStream(
-            ssc, zkQuorum, "spark-streaming-consumer", {topic: 1})
+            ssc, zkQuorum, "spark-streaming-consumer", {topic: 6})
 	lines = kvs.map(lambda x: x[1])
-	json_lines = lines.map(lambda x: json.loads(x))
+	#lines.pprint()
+	#json_lines = lines.map(lambda x: json.loads(x))
 	#json_lines.pprint()
 	#windowed_lines = lines.window(60).flatMap(lambda x: x.split("\n"))
 	# Split the spark context lines by the newline delimiter
-	#sc_lines = lines.flatMap(lambda x: x.split('\n'))
-	#sc_lines.pprint()
+	sc_lines = lines.flatMap(lambda x: x.split('\n'))
+	sc_lines.pprint(1)
 	# For each dstream RDD, apply the processing
 	lines.foreachRDD(process)
 
