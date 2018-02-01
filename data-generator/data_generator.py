@@ -147,7 +147,7 @@ if __name__ == "__main__":
 			p.start()
 	except:
 		print """
-        	Invalid Input. Arguments are: 
+        Invalid Input. Arguments are: 
 		data_generator <processes> <seconds-to-stream> <max_records>
 		Example:
 		python data_generator.py 2 300 500
