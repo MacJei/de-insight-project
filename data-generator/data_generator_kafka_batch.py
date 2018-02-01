@@ -16,8 +16,8 @@ import time
 import sys
 import multiprocessing
 import six
-from pykafka import KafkaClient
-
+from kafka.client import KafkaClient
+from kafka.producer import KafkaProducer
 
 # Initialize Faker object
 fake = Faker()
@@ -41,14 +41,16 @@ class Event(object):
 class Producer(object):
 
     def __init__(self, addr):
-	self.client = KafkaClient(addr)
-	self.topic = self.client.topics["web_event"]
-	self.producer = self.topic.get_producer()
+	self.producer = KafkaProducer(bootstrap_servers=addr)
+	#self.topic = self.client.topics["web_event"]
+	#self.producer = self.topic.get_sync_producer()
     def produce_msgs(self, source_symbol):
+        
         msg_cnt = 0
         packaged_record = ""
         record_size = 0
         total_records = 0
+        count = 0
         while True:
             dt = datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S')
 
@@ -62,17 +64,17 @@ class Producer(object):
                             )
             data = json.dumps(user_event.__dict__)
             total_records += 1
+            count += 1
         # Package multiple records into a single record up to the byte limit  
             if record_size < 100000:
                 record_size += get_byte_size(data)
                 packaged_record += data + '\n'
             else: 
-                self.producer.produce(packaged_record)
+                self.producer.send('web_event', packaged_record)
                 record_size = get_byte_size(data)
                 packaged_record = data + '\n'
-                
-            if msg_cnt % 100000 == 0:
-                print "Records sent: {0}, Rate: {1}".format(msg_cnt,msg_cnt/(time.time()-start_time))
+            if count % 100000 == 0:
+                print "Records sent: {0}, Rate: {1}".format(total_records,total_records/(time.time()-start_time))
 
 # Create a list of unique user_ids
 def create_unique_ids(user_count):

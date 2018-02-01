@@ -49,7 +49,7 @@ class Producer(object):
 
         while True:
             dt = datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S')
-
+            """
             user_event = Event(
                             normal_distrib(user_agent_list),
                             fake.ipv4(),
@@ -57,8 +57,15 @@ class Producer(object):
                             dt,
                             normal_distrib(list(range(1,1000))),
                             random_choice(event_sample)
-                            )
-            data = json.dumps(user_event.__dict__)
+                            )"""
+            data = json.dumps({"user_agent": normal_distrib(user_agent_list),
+                    "ip": fake.ipv4(),
+                    "user_id": normal_distrib(user_id_list),
+                    "timestamp": dt,
+                    "product_id": normal_distrib(list(range(1,1000))),
+                    "event_type": random_choice(event_sample)
+                    })
+            #data = json.dumps(user_event.__dict__)
             if msg_cnt % 100000 == 0:
                 print "Records sent: {0}, Rate: {1}".format(msg_cnt,msg_cnt/(time.time()-start_time))
             self.producer.produce(data)
