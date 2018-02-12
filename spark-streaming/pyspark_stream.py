@@ -28,9 +28,10 @@ def getSparkSessionInstance(sparkConf):
 
 def process(time, rdd):
 	spark = getSparkSessionInstance(rdd.context.getConf())
+	spark.conf.set("spark.sql.shuffle.partitions",40)
 	df = spark.read.json(rdd)
-	
 	try:	
+		#df.cache()
 		df.createOrReplaceTempView("raw_logs")	
 	
 		# Spark SQL query to partiition the data for S3 and pre sort data.
@@ -45,7 +46,8 @@ def process(time, rdd):
 					event_type, 
 					product_id 
 					from raw_logs
-					order by 1""")
+					cluster by 1
+					""")
 
 		# Spark SQL query to aggregate data, and to transform the data. Also partitions the data
 		agg_events = spark.sql("""SELECT        
@@ -68,33 +70,34 @@ def process(time, rdd):
 			count(distinct user_id) unique_users
                         from raw_logs
                         group by 1,2,3,4,5,6,7,8,9
-                        order by 1,2,3""")
+                        cluster by 3,product_id
+			""")
 
-		batchDF.coalesce(1).write.partitionBy('upload_date','upload_hour','upload_interval').mode('append').csv("s3n://insight-spark-stream-files/event_logs",sep='|')
-		agg_events.coalesce(1).write.partitionBy('upload_date','upload_hour','upload_interval').mode('append').csv("s3n://insight-spark-stream-files/event_aggs",sep='|')
-		
+		batchDF.coalesce(2).write.partitionBy('upload_date','upload_hour','upload_interval').mode('append').csv("s3n://insight-spark-stream-files/event_logs",sep='|')
+		agg_events.coalesce(2).write.partitionBy('upload_date','upload_hour','upload_interval').mode('append').csv("s3n://insight-spark-stream-files/event_aggs",sep='|')
+		#df.unpersist()				
 	except:
 		pass
-
 if __name__=="__main__":
         if len(sys.argv) != 5:
             print(
                 "Usage: kinesis_wordcount_asl.py <app-name> <stream-name> <endpoint-url> <region-name>",
                 file=sys.stderr)
             sys.exit(-1)
-
+        num_streams = 4
 	sc = SparkContext(appName="Spark Streaming App")
 	ssc = StreamingContext(sc,60)
         appName, streamName, endpointUrl, regionName = sys.argv[1:]
-        lines = KinesisUtils.createStream(
-            ssc, appName, streamName, endpointUrl, regionName, InitialPositionInStream.LATEST, 10)
+        kinesis_streams = [KinesisUtils.createStream(
+            ssc, appName, streamName, endpointUrl, regionName, InitialPositionInStream.LATEST, 10) for _ in range (num_streams)]
 
+        unioned_streams = ssc.union(*kinesis_streams)
 	#windowed_lines = lines.window(60).flatMap(lambda x: x.split("\n"))
 	# Split the spark context lines by the newline delimiter
-	sc_lines = lines.flatMap(lambda x: x.split("\n"))
+	lines = unioned_streams.flatMap(lambda x: x.split("\n"))
 
 	# For each dstream RDD, apply the processing
-	sc_lines.foreachRDD(process)
+	lines.foreachRDD(process)
 
 	ssc.start()
 	ssc.awaitTermination()
