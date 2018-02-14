@@ -115,6 +115,7 @@ def run_stream(seconds, max_records):
             'Data': data,
             'PartitionKey': str(uuid.uuid4())
         }
+        
         records.append(record)
         total_records += 1
         if total_records % max_records == 0:
