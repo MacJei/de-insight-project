@@ -114,22 +114,23 @@ def run_stream(seconds, max_batch_size):
         data = json.dumps(user_event.__dict__)
         
         total_records += 1
+        packaged_record = []
         # Package multiple records into a single record up to the byte limit  
         if record_size < 100000:
             record_size += get_byte_size(data)
-            packaged_record += data + '\n'
+            packaged_records.append(data + '\n')
         else:
             # Package user events into a Kinesis package of up to 500 records, 
             # to increase HTTP throughput
             batch_record = {
-                'Data': packaged_record,
+                'Data': ''.join(packaged_record),
                 'PartitionKey': str(uuid.uuid4())
             }
             batch_records.append(batch_record)
             batch_byte_size += record_size
 
             record_size = get_byte_size(data)
-            packaged_record = data + '\n'
+            packaged_record.append(data + '\n')
 
         # If batch exceeds the batch size, push it to Kinesis.
         if batch_byte_size > max_batch_size:
