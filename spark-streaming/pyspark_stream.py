@@ -49,32 +49,32 @@ def process(time, rdd):
 					cluster by 1
 					""")
 
-		# Spark SQL query to aggregate data, and to transform the data. Also partitions the data
+		# Spark SQL query to aggregate data, and to transform the data. Also partitions the data for S3
 		agg_events = spark.sql("""SELECT        
-                    to_date(cast(UNIX_TIMESTAMP(current_timestamp,'dd-MM-yyyy') as TIMESTAMP)) event_date,
-                    hour(cast(UNIX_TIMESTAMP(current_timestamp,'dd-MM-yyyy H:m:s') as TIMESTAMP)) hour,
-                    minute(cast(UNIX_TIMESTAMP(current_timestamp,'dd-MM-yyyy H:m:s') as TIMESTAMP)) minute,
-                    to_date(from_utc_timestamp(cast(UNIX_TIMESTAMP(current_timestamp,'dd-MM-yyyy') as TIMESTAMP),'EST')) upload_date,
-                    date_format(from_utc_timestamp(cast(UNIX_TIMESTAMP(current_timestamp,'dd-MM-yyyy H:m:s') as TIMESTAMP),'EST'), 'H') upload_hour,
-                    cast(date_format(cast(UNIX_TIMESTAMP(current_timestamp,'dd-MM-yyyy H:m:s') as TIMESTAMP), 'm')/5 as integer) upload_interval,
-                    split(user_agent,"/")[0] browser,
-                    case when split(user_agent,'\\\\(')[1] like '%Linux%' then 'Linux'
-                    when split(user_agent,'\\\\(')[1] like '%Windows%' then 'Windows'
-                    when split(user_agent,'\\\\(')[1] like '%Mac%' then 'iOS'
-                    else 'Other' end os,
-                    product_id,
-                    count(case when event_type = 'pageView' then 1 end) page_views,
-                    count(case when event_type = 'click' then 1 end) clicks,
-                    count(case when event_type = 'purchase' then 1 end) purchases,
-                    count(case when event_type = 'addToCart' then 1 end) add_to_cart,
-			        count(distinct user_id) unique_users
-                    from raw_logs
-                    group by 1,2,3,4,5,6,7,8,9
-                    cluster by 3,product_id
+					to_date(cast(UNIX_TIMESTAMP(current_timestamp,'dd-MM-yyyy') as TIMESTAMP)) event_date,
+					hour(cast(UNIX_TIMESTAMP(current_timestamp,'dd-MM-yyyy H:m:s') as TIMESTAMP)) hour,
+					minute(cast(UNIX_TIMESTAMP(current_timestamp,'dd-MM-yyyy H:m:s') as TIMESTAMP)) minute,
+					to_date(from_utc_timestamp(cast(UNIX_TIMESTAMP(current_timestamp,'dd-MM-yyyy') as TIMESTAMP),'EST')) upload_date,
+					date_format(from_utc_timestamp(cast(UNIX_TIMESTAMP(current_timestamp,'dd-MM-yyyy H:m:s') as TIMESTAMP),'EST'), 'H') upload_hour,
+					cast(date_format(cast(UNIX_TIMESTAMP(current_timestamp,'dd-MM-yyyy H:m:s') as TIMESTAMP), 'm')/5 as integer) upload_interval,
+					split(user_agent,"/")[0] browser,
+					case when split(user_agent,'\\\\(')[1] like '%Linux%' then 'Linux'
+					when split(user_agent,'\\\\(')[1] like '%Windows%' then 'Windows'
+					when split(user_agent,'\\\\(')[1] like '%Mac%' then 'iOS'
+					else 'Other' end os,
+					product_id,
+					count(case when event_type = 'pageView' then 1 end) page_views,
+					count(case when event_type = 'click' then 1 end) clicks,
+					count(case when event_type = 'purchase' then 1 end) purchases,
+					count(case when event_type = 'addToCart' then 1 end) add_to_cart,
+					count(distinct user_id) unique_users
+					from raw_logs
+					group by 1,2,3,4,5,6,7,8,9
+					cluster by 3,product_id
 			        """)
 
-		batchDF.coalesce(2).write.partitionBy('upload_date','upload_hour','upload_interval').mode('append').csv("s3n://insight-spark-stream-files/event_logs",sep='|')
-		agg_events.coalesce(2).write.partitionBy('upload_date','upload_hour','upload_interval').mode('append').csv("s3n://insight-spark-stream-files/event_aggs",sep='|')
+		batchDF.coalesce(12).write.partitionBy('upload_date','upload_hour','upload_interval').mode('append').csv("s3n://insight-spark-stream-files/event_logs",sep='|')
+		agg_events.coalesce(12).write.partitionBy('upload_date','upload_hour','upload_interval').mode('append').csv("s3n://insight-spark-stream-files/event_aggs",sep='|')
 						
 	except:
 		pass

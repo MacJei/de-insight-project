@@ -157,13 +157,13 @@ if __name__ == "__main__":
 		seconds = int(sys.argv[2])
 		max_records = int(sys.argv[3])
 		
-		for x in range(processes):
+		for x in range(processes-1):
 			p = multiprocessing.Process(target=run_stream, args=[seconds,max_records])
 			jobs.append(p)
 			p.start()
 	except IndexError:
 		print """
-        	Invalid Input. Arguments are: 
+        Invalid Input. Arguments are: 
 		data_generator <processes> <seconds-to-stream> <max_batch_size> (in bytes)
 		Example:
 		python data_generator.py 2 300 100000
